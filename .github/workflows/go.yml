@@ -12,7 +12,10 @@ on:
 jobs:
 
   ci:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ['ubuntu-latest', 'ubuntu-18.04', 'ubuntu-20.04']
     steps:
     - uses: actions/checkout@v4
 
@@ -33,11 +36,32 @@ jobs:
     - name: Test
       run: DB_HOST=${{ secrets.DB_HOST}} DB_USER=${{ secrets.DB_USER }} DB_PASSWORD=${{ secrets.DB_PASSWORD }} DB_NAME=${{ secrets.DB_NAME }} DB_PORT=${{ secrets.DB_PORT }} go test -v main_test.go
 
-    - name: Build
-      run: go build main.go
+    #- name: Build
+    #  run: go build main.go
 
-    - name: Upload Project
-      uses: actions/upload-artifact@v4
-      with:
-        name: projeto_compilado
-        path: main
+    #- name: Upload Project
+    #  uses: actions/upload-artifact@v4
+    #  with:
+    #    name: projeto_compilado
+    #    path: main
+
+  build:
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        run: go build -v main.go
+      
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          # Artifact name
+          name: go_program
+          # A file, directory or wildcard pattern that describes what to upload
+          path: main
+  
+  docker:
+    needs: build
+    uses: ./.github/workflows/Docker.yml
+    secrets: inherit
